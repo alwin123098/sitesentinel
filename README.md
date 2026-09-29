@@ -12,6 +12,13 @@ The detection model is trained on a real cyber-security dataset from Hugging Fac
 > (294,771 attacks / 331,129 benign), covering SQL injection, XSS, command injection
 > and LFI. MIT license. https://huggingface.co/datasets/YangYang-Research/web-attack-detection
 
+
+## Watch the launch film
+
+[![SiteSentinel](media/sitesentinel-poster.png)](https://github.com/alwin123098/sitesentinel/releases/download/v1.0.0/sitesentinel-intro.mp4)
+
+*(52-second intro — click to play. Also on the [v1.0.0 release](https://github.com/alwin123098/sitesentinel/releases/tag/v1.0.0).)*
+
 ## What you get
 
 | File | Purpose |
