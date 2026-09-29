@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Acme Shop — demo site protected by SiteSentinel</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 760px; margin: 40px auto; padding: 0 16px; color: #1a1a2e; }
+  header { display: flex; justify-content: space-between; align-items: center; }
+  .badge { background: #0f9d58; color: #fff; padding: 4px 10px; border-radius: 12px; font-size: 12px; }
+  form { background: #f6f7fb; padding: 20px; border-radius: 12px; margin: 20px 0; }
+  input[type=text] { width: 70%; padding: 10px; border: 1px solid #ccd; border-radius: 8px; }
+  button { padding: 10px 16px; border: 0; border-radius: 8px; background: #2b5cff; color: #fff; cursor: pointer; margin-top: 8px; }
+  button.gray { background: #666; }
+  .sim { background: #fff4e5; border: 1px dashed #f0a030; padding: 16px; border-radius: 12px; }
+  .sim button { background: #c0392b; margin: 4px 4px 0 0; }
+  #out { font-family: monospace; background: #111; color: #9f9; padding: 12px; border-radius: 8px; white-space: pre-wrap; min-height: 40px; }
+  footer { margin-top: 30px; font-size: 12px; color: #889; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Acme Shop</h1>
+  <span class="badge">🛡 SiteSentinel active</span>
+</header>
+
+<p>This page is a stand-in for <b>any website</b>. It loads <code>sentinel.js</code>, which
+watches the URL, form fields, outgoing fetch/XHR calls and DOM injections, and reports
+attack signatures to the backend in real time.</p>
+
+<form id="searchForm" onsubmit="return doSearch(event)">
+  <label><b>Search products</b></label><br><br>
+  <input type="text" id="q" name="q" placeholder="e.g. wireless mouse" autocomplete="off">
+  <button type="submit">Search</button>
+</form>
+
+<h3>Results</h3>
+<div id="out">— no search yet —</div>
+
+<div class="sim">
+  <h3>Attack simulator (safe — for testing the module)</h3>
+  <p>Each button plants a classic payload in the search field and submits it.
+     The browser module flags it, the backend ML model scores it, and after enough
+     strikes the source IP is auto-blocked. Watch the
+     <a href="/sentinel/dashboard" target="_blank">dashboard</a>.</p>
+  <button onclick="simulate(0)">SQL injection</button>
+  <button onclick="simulate(1)">XSS (script tag)</button>
+  <button onclick="simulate(2)">XSS handler</button>
+  <button onclick="simulate(3)">SQL blind (SLEEP)</button>
+  <button onclick="simulate(4)">Path traversal</button>
+  <button onclick="simulate(5)">JS URI</button>
+  <button onclick="simulate(6)" class="gray">Benign query</button>
+</div>
+
+<footer>
+  Detection model trained on YangYang-Research/web-attack-detection (625,904 labeled
+  requests, MIT license) from Hugging Face. Field values are never transmitted — only the
+  matched signature and a short snippet.
+</footer>
+
+<!-- ====== SITESENTINEL: install on any site with these two tags ====== -->
+<script>window.SENTINEL_CONFIG = { endpoint: "/sentinel/events", siteKey: "demo-site-key", debug: true };</script>
+<script src="sentinel.js"></script>
+<!-- ==================================================================== -->
+
+<script>
+function doSearch(ev) {
+  ev.preventDefault();
+  var q = document.getElementById("q").value;
+  fetch("/api/search?q=" + encodeURIComponent(q))
+    .then(r => r.json())
+    .then(j => { document.getElementById("out").textContent = JSON.stringify(j, null, 2); })
+    .catch(e => { document.getElementById("out").textContent = "Request blocked or failed: " + e; });
+  return false;
+}
+var PAYLOADS = [
+  "gift' OR 1=1--",
+  "<script>alert(document.cookie)<\/script>",
+  "<img src=x onerror=alert(1)>",
+  "1' AND SLEEP(5)--",
+  "../../etc/passwd",
+  "javascript:alert(document.domain)",
+  "normal wireless mouse"
+];
+function simulate(i) {
+  document.getElementById("q").value = PAYLOADS[i];
+  document.getElementById("searchForm").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+}
+</script>
+</body>
+</html>

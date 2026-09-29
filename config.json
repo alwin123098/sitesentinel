@@ -1,0 +1,18 @@
+{
+  "port": 8080,
+  "siteKey": "demo-site-key",
+  "webhookUrl": "",
+  "ownerEmail": "",
+  "mlThreshold": 30,
+  "strikeThreshold": 3,
+  "rateWindowMs": 60000,
+  "blockTtlMs": 900000,
+  "criticalSignatures": [
+    "sql_sleep_benchmark",
+    "lfi_etc_passwd",
+    "xss_js_uri",
+    "lfi_php_wrapper",
+    "scan_probe_tool",
+    "poll_scan_probe"
+  ]
+}

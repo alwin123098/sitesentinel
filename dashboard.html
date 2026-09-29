@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SiteSentinel - owner dashboard</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 1000px; margin: 30px auto; padding: 0 16px; background: #0e1117; color: #e6edf3; }
+  h1 small { color: #8b949e; font-weight: normal; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 20px 0; }
+  .card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 14px; }
+  .card .n { font-size: 30px; font-weight: 700; } .card .l { color: #8b949e; font-size: 12px; }
+  .red { color: #f85149; } .yel { color: #d29922; } .grn { color: #3fb950; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 10px 0 30px; }
+  th, td { text-align: left; padding: 7px 9px; border-bottom: 1px solid #21262d; }
+  th { color: #8b949e; }
+  a { color: #58a6ff; } .muted { color: #8b949e; }
+  #alerts div { background: #2d1b1e; border-left: 3px solid #f85149; padding: 10px; margin: 8px 0; border-radius: 6px; }
+</style>
+</head>
+<body>
+<h1>SiteSentinel <small>owner dashboard</small></h1>
+<p class="muted">Live view of what the module sees on your site. Auto-refreshes every 3 s.</p>
+
+<div class="grid" id="cards"></div>
+
+<h3>Recent alerts <span class="muted">(sent to webhook + alerts.log.jsonl)</span></h3>
+<div id="alerts"></div>
+
+<h3>Recent events</h3>
+<table><thead><tr><th>time</th><th>kind</th><th>verdict</th><th>signatures / ml</th><th>url</th><th>ip</th></tr></thead>
+<tbody id="events"></tbody></table>
+
+<p class="muted" id="model"></p>
+
+<script>
+var AMP=String.fromCharCode(38), LT=String.fromCharCode(60), GT=String.fromCharCode(62), QT=String.fromCharCode(34);
+function esc(s){
+  var d = {}; d[AMP]=AMP+"amp;"; d[LT]=LT+"lt;"; d[GT]=GT+"gt;"; d[QT]=QT+"quot;";
+  var R = new RegExp("["+AMP+LT+GT+"]","g");
+  return String(s==null?"":s).replace(R, function(c){ return d[c] || c; });
+}
+function row(ev){
+  var cls = ev.verdict==="malicious" ? "red" : ev.verdict==="suspicious" ? "yel" : "grn";
+  return "<tr><td>"+new Date(ev.ts||Date.now()).toLocaleTimeString()+"</td><td>"+esc(ev.kind)+
+    "</td><td class='"+cls+"'>"+esc(ev.verdict)+
+    "</td><td>"+esc((ev.sig||"")+" "+(ev.ml!=null?"ml="+ev.ml:""))+"</td><td>"+esc(ev.url||"")+"</td><td>"+esc(ev.ip)+"</td></tr>";
+}
+function load(){
+  fetch("/sentinel/stats").then(function(r){ return r.json(); }).then(function(s){
+    document.getElementById("cards").innerHTML = [
+      ["Total events", s.stats.total, "grn"], ["Malicious", s.stats.malicious, "red"],
+      ["Suspicious", s.stats.suspicious, "yel"], ["IPs blocked", s.stats.blocked, "red"],
+      ["Alerts sent", s.stats.alerts, "yel"], ["Uptime (s)", s.uptimeSec, "grn"]
+    ].map(function(c){ return "<div class='card'><div class='n "+c[2]+"'>"+c[1]+"</div><div class='l'>"+c[0]+"</div></div>"; }).join("");
+    document.getElementById("events").innerHTML = (s.recentEvents||[]).map(row).join("") || "<tr><td colspan=6 class='muted'>no events yet</td></tr>";
+    document.getElementById("alerts").innerHTML = (s.recentAlerts||[]).map(function(a){
+      return "<div><b>"+esc(a.kind)+"</b> - "+esc(a.reason||"")+" <span class='muted'>- "+esc(a.action||"")+" - ip "+esc(a.ip||"-")+"</span></div>";
+    }).join("") || "<div class='muted'>none yet</div>";
+    document.getElementById("model").innerHTML = "Model: "+esc(s.model.source)+" - precision "+esc(s.model.validation.precision)+", recall "+esc(s.model.validation.recall);
+    if((s.blockedIps||[]).length){
+      document.getElementById("cards").innerHTML += "<div class='card'><div class='l'>Blocked IPs</div><div>"+s.blockedIps.map(esc).join("<br>")+"</div></div>";
+    }
+  }).catch(function(){});
+}
+load(); setInterval(load, 3000);
+</script>
+</body>
+</html>

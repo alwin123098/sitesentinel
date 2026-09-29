@@ -1,0 +1,176 @@
+{
+ "source": "YangYang-Research/web-attack-detection (Hugging Face, MIT license)",
+ "rows": 625904,
+ "n_attack": 294775,
+ "n_benign": 331129,
+ "signatures": [
+  {
+   "name": "sql_tautology",
+   "regex": "(('|%)?\\s*(or|and)\\s+['\\\"]?\\d+['\\\"]?\\s*=\\s*['\\\"]?\\d+)",
+   "attack_hit_rate": 0.01598,
+   "benign_hit_rate": 1e-05,
+   "lift": 2269.8
+  },
+  {
+   "name": "sql_union_select",
+   "regex": "union[\\s+]+(all[\\s+]+)?select",
+   "attack_hit_rate": 0.02205,
+   "benign_hit_rate": 0.00098,
+   "lift": 22.51
+  },
+  {
+   "name": "sql_sleep_benchmark",
+   "regex": "(sleep\\s*\\(\\s*\\d+|benchmark\\s*\\(\\s*\\d+|waitfor\\s+delay|pg_sleep)",
+   "attack_hit_rate": 0.06858,
+   "benign_hit_rate": 0.0,
+   "lift": 68582.12
+  },
+  {
+   "name": "sql_comment",
+   "regex": "(--|#|/\\*)\\s*$|(')\\s*(or|and)\\s+(')",
+   "attack_hit_rate": 0.05106,
+   "benign_hit_rate": 0.00136,
+   "lift": 37.46
+  },
+  {
+   "name": "sql_drop_alter",
+   "regex": ";\\s*(drop|alter|truncate|create)\\s+(table|database)",
+   "attack_hit_rate": 0.0,
+   "benign_hit_rate": 1e-05,
+   "lift": 0.34
+  },
+  {
+   "name": "sql_quote_probe",
+   "regex": "('\\s*(or|and|union|select|;)|\\\\x27|\\\\x3d)",
+   "attack_hit_rate": 0.03337,
+   "benign_hit_rate": 0.00438,
+   "lift": 7.63
+  },
+  {
+   "name": "xss_script_tag",
+   "regex": "<\\s*script",
+   "attack_hit_rate": 0.06448,
+   "benign_hit_rate": 9e-05,
+   "lift": 727.98
+  },
+  {
+   "name": "xss_event_handler",
+   "regex": "on(error|load|click|mouseover|focus|animationstart|toggle)\\s*=",
+   "attack_hit_rate": 0.0125,
+   "benign_hit_rate": 1e-05,
+   "lift": 1242.76
+  },
+  {
+   "name": "xss_js_uri",
+   "regex": "javascript\\s*:",
+   "attack_hit_rate": 0.00589,
+   "benign_hit_rate": 0.0,
+   "lift": 5890.24
+  },
+  {
+   "name": "xss_img_src",
+   "regex": "<\\s*img[^>]+src",
+   "attack_hit_rate": 0.00207,
+   "benign_hit_rate": 0.00017,
+   "lift": 12.39
+  },
+  {
+   "name": "xss_svg_onload",
+   "regex": "<\\s*svg[^>]*onload",
+   "attack_hit_rate": 0.0003,
+   "benign_hit_rate": 0.0,
+   "lift": 302.93
+  },
+  {
+   "name": "xss_alert_prompt",
+   "regex": "(alert|prompt|confirm)\\s*\\(",
+   "attack_hit_rate": 0.18955,
+   "benign_hit_rate": 1e-05,
+   "lift": 14491.64
+  },
+  {
+   "name": "xss_encoded",
+   "regex": "(&#x?[0-9a-f]+;|%3cscript|%3c%73%63%72%69%70%74)",
+   "attack_hit_rate": 0.11923,
+   "benign_hit_rate": 0.00192,
+   "lift": 62.05
+  },
+  {
+   "name": "lfi_path_traversal",
+   "regex": "(\\.\\./|\\.\\.\\\\|%2e%2e%2f|%2e%2e/)",
+   "attack_hit_rate": 0.04005,
+   "benign_hit_rate": 2e-05,
+   "lift": 2094.96
+  },
+  {
+   "name": "lfi_etc_passwd",
+   "regex": "/etc/(passwd|shadow|hosts)",
+   "attack_hit_rate": 0.00229,
+   "benign_hit_rate": 0.0,
+   "lift": 2294.27
+  },
+  {
+   "name": "lfi_php_wrapper",
+   "regex": "php://(filter|input|expect)",
+   "attack_hit_rate": 2e-05,
+   "benign_hit_rate": 0.0,
+   "lift": 21.35
+  },
+  {
+   "name": "cmdi_semicolon",
+   "regex": ";\\s*(cat|ls|id|whoami|wget|curl|nc|rm|ping)\\s",
+   "attack_hit_rate": 5e-05,
+   "benign_hit_rate": 0.0,
+   "lift": 51.89
+  },
+  {
+   "name": "cmdi_pipe",
+   "regex": "\\|\\s*(cat|ls|id|whoami|wget|curl|nc|rm|ping)\\s",
+   "attack_hit_rate": 4e-05,
+   "benign_hit_rate": 0.0,
+   "lift": 45.1
+  },
+  {
+   "name": "cmdi_backtick",
+   "regex": "(`[^`]+`|\\$\\([^)]+\\))",
+   "attack_hit_rate": 0.01658,
+   "benign_hit_rate": 5e-05,
+   "lift": 336.1
+  },
+  {
+   "name": "cmdi_shell_meta",
+   "regex": "(\\$\\((i|e)fd\\)|&&\\s*(cat|ls|id|whoami))",
+   "attack_hit_rate": 6e-05,
+   "benign_hit_rate": 0.0,
+   "lift": 65.46
+  },
+  {
+   "name": "rce_eval",
+   "regex": "(eval\\s*\\(|system\\s*\\(|exec\\s*\\(|passthru|shell_exec|popen)",
+   "attack_hit_rate": 0.00163,
+   "benign_hit_rate": 1e-05,
+   "lift": 231.45
+  },
+  {
+   "name": "ssrf_internal",
+   "regex": "(127\\.0\\.0\\.1|localhost|169\\.254\\.169\\.254|metadata\\.google)",
+   "attack_hit_rate": 0.08507,
+   "benign_hit_rate": 0.10872,
+   "lift": 0.78
+  },
+  {
+   "name": "poll_scan_probe",
+   "regex": "(sqlmap|nikto|nmap|nessus|acunetix|havij|dirbuster|wpscan|masscan|metasploit)",
+   "attack_hit_rate": 3e-05,
+   "benign_hit_rate": 1e-05,
+   "lift": 3.47
+  },
+  {
+   "name": "header_injection",
+   "regex": "(\\r\\n|\\n)(to|bcc|subject|reply-to)\\s*:",
+   "attack_hit_rate": 0.0,
+   "benign_hit_rate": 0.0,
+   "lift": 1.0
+  }
+ ]
+}
