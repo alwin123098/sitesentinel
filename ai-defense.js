@@ -25,10 +25,10 @@ function createAIAdvisor(options = {}) {
   return async function aiAdvisor(alert) {
     const data = {
       scope,
-      kind: String(alert && alert.kind || "SECURITY_EVENT").slice(0, 40),
-      verdict: String(alert && alert.verdict || "unknown").slice(0, 20),
-      signatures: Array.isArray(alert && alert.signatures) ? alert.signatures.map(String).slice(0, 20) :
-        String(alert && alert.reason || "").split(/[(),]/).map(s => s.trim()).filter(Boolean).slice(0, 20),
+      kind: ["ATTACK", "AUTO_BLOCK", "CLIENT_ACTIVITY"].includes(alert && alert.kind) ? alert.kind : "SECURITY_EVENT",
+      verdict: ["malicious", "suspicious", "clean"].includes(alert && alert.verdict) ? alert.verdict : "unknown",
+      signatures: (Array.isArray(alert && alert.signatures) ? alert.signatures : String(alert && alert.reason || "").split(/[(),]/))
+        .map(s => String(s).trim()).filter(s => /^[a-zA-Z0-9_.:-]{1,80}$/.test(s)).slice(0, 20),
       // Do not include request data, paths, query strings, headers, IPs, or credentials.
     };
     const payload = JSON.stringify({
