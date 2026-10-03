@@ -161,3 +161,7 @@ python3 train.py      # rebuilds model.json + stopwords.json (needs pandas only)
 ## License
 
 MIT. Model data: YangYang-Research/web-attack-detection (Hugging Face, MIT).
+
+## Optional AI defensive triage
+
+An optional server-side advisor can provide bounded defensive recommendations for alerts in the SiteSentinel-protected application. It accepts keys for OpenAI-compatible chat-completions providers through server-side environment variables. Keys must never be placed in browser code or committed config. See [AI-DEFENSE.md](AI-DEFENSE.md) for scope, setup, and data handling.
