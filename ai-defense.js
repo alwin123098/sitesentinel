@@ -2,7 +2,7 @@
 
 /**
  * Optional defensive triage adapter for OpenAI-compatible chat completions APIs.
- * Pass the returned async function as createSentinel({ aiAdvisor }).
+ * Attach the returned async function through sentinel.onAlert().
  * API credentials and event payloads stay server-side; request bodies, cookies,
  * authorization headers, query strings, and client IPs are never sent.
  */
