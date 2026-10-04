@@ -3,7 +3,7 @@ import json
 from .core import Inspector, RequestData
 
 class _PrefixedStream:
-    """Replay inspected bytes, then continue from the original WSGI stream."""
+    """Replay inspected bytes before continuing from the original WSGI input."""
     def __init__(self, prefix, stream):
         self.prefix = memoryview(prefix)
         self.offset = 0
@@ -17,9 +17,45 @@ class _PrefixedStream:
         take = min(size, available)
         first = self.prefix[self.offset:self.offset + take].tobytes()
         self.offset += take
-        if take < size:
-            return first + self.stream.read(size - take)
-        return first
+        return first if take == size else first + self.stream.read(size - take)
+    def readline(self, size=-1):
+        available = len(self.prefix) - self.offset
+        prefix = self.prefix[self.offset:].tobytes()
+        search = prefix if size is None or size < 0 else prefix[:size]
+        newline = search.find(b"\\n")
+        if newline >= 0:
+            take = newline + 1
+            result = prefix[:take]
+            self.offset += take
+            return result
+        take = len(search)
+        first = prefix[:take]
+        self.offset += take
+        remaining = -1 if size is None or size < 0 else size - take
+        if remaining == 0:
+            return first
+        return first + self.stream.readline(remaining)
+    def readinto(self, buffer):
+        data = self.read(len(buffer))
+        buffer[:len(data)] = data
+        return len(data)
+    def readlines(self, hint=-1):
+        lines = []
+        total = 0
+        while hint < 0 or total < hint:
+            line = self.readline()
+            if not line:
+                break
+            lines.append(line)
+            total += len(line)
+        return lines
+    def __iter__(self):
+        return self
+    def __next__(self):
+        line = self.readline()
+        if not line:
+            raise StopIteration
+        return line
 
 def _notify(callback, result):
     if result.suspicious and callback:
@@ -35,7 +71,7 @@ class WSGIMiddleware:
         self.should_block = should_block or (lambda result: False)
     def __call__(self, environ, start_response):
         try:
-            size = min(int(environ.get("CONTENT_LENGTH") or 0), self.inspector.max_body_bytes)
+            size = max(0, min(int(environ.get("CONTENT_LENGTH") or 0), self.inspector.max_body_bytes))
         except (TypeError, ValueError):
             size = 0
         stream = environ.get("wsgi.input")
@@ -60,25 +96,36 @@ class ASGIMiddleware:
     async def __call__(self, scope, receive, send):
         if scope.get("type") != "http":
             return await self.app(scope, receive, send)
+        max_size = self.inspector.max_body_bytes
         chunks = []
         size = 0
         more = True
-        while more and size < self.inspector.max_body_bytes:
+        pending = None
+        while more and size < max_size:
             msg = await receive()
             if msg["type"] == "http.disconnect":
                 return
+            if msg["type"] != "http.request":
+                continue
             chunk = msg.get("body", b"")
-            take = min(len(chunk), self.inspector.max_body_bytes - size)
+            take = min(len(chunk), max_size - size)
             chunks.append(chunk[:take])
             size += take
             more = bool(msg.get("more_body", False))
+            if take < len(chunk):
+                pending = {"type": "http.request", "body": chunk[take:], "more_body": more}
+                break
         body = b"".join(chunks)
-        replayed = False
+        first_more = pending is not None or more
+        first = True
         async def replay_receive():
-            nonlocal replayed
-            if not replayed:
-                replayed = True
-                return {"type": "http.request", "body": body, "more_body": False}
+            nonlocal first, pending
+            if first:
+                first = False
+                return {"type": "http.request", "body": body, "more_body": first_more}
+            if pending is not None:
+                msg, pending = pending, None
+                return msg
             return await receive()
         headers = {k.decode("latin1"): v.decode("latin1") for k, v in scope.get("headers", [])}
         req = RequestData(scope.get("method", ""), scope.get("path", ""), scope.get("query_string", b"").decode("latin1"), headers, body)
